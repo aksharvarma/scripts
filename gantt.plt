@@ -1,8 +1,15 @@
 #
 # Gantt Chart maker using gnuplot that shows dependencies
 # Modified from the basic demo file offered by gnuplot
+# Needs at least gnuplot 5.0 patchlevel 1
 #
 
+# This is how the data is stored for the charting purpose.  The 2nd
+# column is the name of the task, the 3rd and 4th are the start and end
+# dates.
+# The 1st column is the task no. This can be adjusted to allow
+# empty spaces in the chart if one wishes by skipping the appropriate
+# numbers in the sequence.
 
 $DATA << EOD
 #Task no., Task, start,	end
@@ -27,6 +34,12 @@ $DATA << EOD
 19, Full Project, 2016-01-23, 2016-04-24
 EOD
 
+
+# This is what is used to implement the dependency making in the
+# gantt chart. The 1st column is the date at which the dependency
+# is satisfied. The 2nd column is the task on which something is
+# dependent. The 3rd column is the task which has such a dependency.
+
 $DEPENDS << EOD
 #date, task1, task2
 2016-01-31, 1, 2
@@ -36,17 +49,26 @@ $DEPENDS << EOD
 2016-04-17, 17, 18
 EOD
 
+
+# Using commas as the separators instead of gnuplot default of spaces
 set datafile separator ","
+
+# Setting output size and file names
 set terminal png size 1366,768 #1920,1080
 set output "gantt.png"
+
+# These lines are to tell gnuplot to interpret the time data properly
 set xdata time
 timeformat = "%Y-%m-%d"
+
+# This sets the output format for the x axis
 set format x "%d\n%b"
 
+# Ensure that the tasks start from the top instead of bottom
 set yrange [-1:] reverse
 
+# Setting the tics. Should be changed according to requirement
 OneDay = strptime("%d","5")
-
 set xtics OneDay nomirror
 set xtics scale 2, 0.5
 set mxtics 2
@@ -58,12 +80,20 @@ unset key
 set title "{/=15 Gantt Chart}"
 set border 3
 
+# This function is as is from the demo file.
 T(N) = timecolumn(N,timeformat)
 
+# The two kinds of arrows that are used.
+# The arrow 1 are the arrows used for the duration of the task
+# The arrow 2 are the arrows used for teh dependencies.
+# One can experiment with the number after lt to change colors and other customizations.
 set style arrow 1 filled size screen 0.02, 15 fixed lt 6 lw 4
 set style arrow 2 nohead size screen 0.02, 15 fixed lt 7 lw 4
 
 set key off
 
+# The final plotting command. The syntax for the vector is
+# x : y : delta_x : delta_y
+# The yticlabel sets the y axis label according to the 2nd column.
 plot $DATA using (T(3)) : ($1) : (T(4)-T(3)) : (0) : yticlabel(2) with vector as 1, \
      $DEPENDS using (T(1)) : ($2) :(0) : ($3-$2) with vector as 2
